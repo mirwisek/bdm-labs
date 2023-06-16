@@ -39,9 +39,12 @@
 ## 1.2 Problems
 
 1. Consider:
-    1. `[’BCN’, POPULATION: {VALUE:’2,000,000’}, REGION: {VALUE:’CAT’}]`
-    2. `[’BCN’, ALL: {VALUE:’2,000,000; CAT’}]`
-    3. `[’BCN’, ALL: {POPULATION:’2,000,000’; REGION:’CAT’}]`
+
+    a. `[’BCN’, POPULATION: {VALUE:’2,000,000’}, REGION: {VALUE:’CAT’}]`
+
+    b. `[’BCN’, ALL: {VALUE:’2,000,000; CAT’}]`
+
+    c. `[’BCN’, ALL: {POPULATION:’2,000,000’; REGION:’CAT’}]`
     
     Place {a, b, c} in the table:
 
