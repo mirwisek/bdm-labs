@@ -63,12 +63,24 @@
 
 
 8. Given *N* replicas, let’s call *R* the *ReadConcern* parameter of MongoDB and *W* the *WriteConcern* (which indicate respectively the number of copies it reads and writes, before confirming the operation to the user); give the equation involving those variables that corresponds to the **eventually consistent** configuration.
+*W+R<=N* --> Replicas updated (W) may not be the same as the ones read (R)
+N: #replicas
+W: #replicas that have to be written before commit
+R: #replicas read that need to coincide before giving response
+
+
 9. What is the difference between query cost and query response time ...
-    1. in centralized systems?
-    2. in distributed systems?
-10. Name the two factors that make impossible having linear scalability according to the Universal Scalability Law.
-    1. —
-    2. —
+   Query cost = Resources Used
+   Response time = Time taken to perform action
+
+    1. in centralized systems? Lineal Relation between query cost and response time: The more resources the less time
+    2. in distributed systems? Due to paralelism, relation is not lineal. (Refering to Universal scalability law)
+       - You can be using more resources and affecting response time based on the increase of comunication required.
+       - You can be waiting for a response without using more resources
+
+11. Name the two factors that make impossible having linear scalability according to the Universal Scalability Law.
+    1. —(a) Communication → More resources imply equal or more communication: Communication cost is not reduced by having more machines, they would remain the same or increase.
+    2. —(b) Unparalelizable Actions: Some actions are not improved with parallelism. Examples: A join of all values, read values equal to 'A', etc
 
 ## 2.2 Problems
 
@@ -98,12 +110,14 @@
         1. You buy an item, but this item does not appear in your basket.
         2. You reload the page: the item appears.
         
-        ⇒ What happened?
+        ⇒ What happened? *Lazy primary copy replication* --> We write in a server but get a response from another one that is not yet updated
+
         
     2. Show a database replication strategy (e.g., sketch it) where:
         1. You delete an item from your command, and add another one: the basket shows both items.
         
-        ⇒ What happened? Will the situation change if you reload the page?
+        ⇒ What happened? Will the situation change if you reload the page? *Lazy distributed replication* → Client access one server and deletes, but adds the new item to another server that is not updated with the previous deletion. In a primary replication, the master would have a queue of actions to perform, therefore, it would not add item B without having deleted item A. However, since in distributed replications, there is no master and operations can be requested from any node in any order, we could have this scenario. If we reload the page it should eventually be updated.
+
         
 3. Consider the following architectures and answer the questions:
     
@@ -115,7 +129,14 @@
     | --- | --- | --- |
     | Disk | ≈ 5 × 10^−3s (5 millisec.) | At best 100 MB/s |
     1. How long would it take (i.e., response time) to read 1TB with sequential access (Figure 1)? (in secs)
+    *Process:*
+    Response time =  TransferTime (TTR) + Latency
+    TransferTime (TTR) = #bytes/Bandwidth = 1,000,000B/100MB = 10,000MB
+
+    *Answer*= 10,000 + 5 × 10−3s
+   
     2. How long would a single random access (i.e., reading one tuple, of for example 100 bytes, through an index) take (i.e., response time), assuming we already have the physical address? (in secs)
+     *Answer*=Just the latency because you access just once ≈ 5 × 10−3s (5 millisecond.)
         
         ![Figure 2: Shared-memory architecture](02-Distributed%20Data/image3.png)
         
@@ -151,7 +172,7 @@
     5. How long would it take (i.e., response time) to read 1TB with distributed access (Figure 3)? Assume 100 shared-nothing machines (with all data replicated in each of them) in a star-shape LAN in a single rack where all data is sent to the center of the star in only one network hop.
     6. How long would it take (i.e., response time) to read 1TB with distributed access (Figure 3)? Assume 100 shared-nothing machines (with all data replicated in each of them) in a star-shape cluster of ma- chines connected through the Internet where all data is sent to the center of the star in only one network hop.
     7. How long would a single random access (i.e., reading one tuple, of 100 bytes, through an index) take (i.e., response time), assuming we already have the physical address? (in secs)
-4. What are the main differences between these two distributed access plans? Under which assumptions is one or the other better?
+5. What are the main differences between these two distributed access plans? Under which assumptions is one or the other better?
     
     ```sql
     SELECT * FROM employee e, assignedTo a
@@ -174,7 +195,7 @@
     
     Figure 4: Distributed Access Plans
     
-5. Compute the fragment query (data location stage) for the database setting and query below and find in how many ways we can assign the operations to the different sites.
+6. Compute the fragment query (data location stage) for the database setting and query below and find in how many ways we can assign the operations to the different sites.
     
     ⇒ Database setting:
     
@@ -191,4 +212,4 @@
     
     ![02-Distributed%20Data/image7.jpeg](02-Distributed%20Data/image7.jpeg)
     
-6. Consider a left-deep process tree corresponding to a query, where each internal node is a join, and every leaf a data source (e.g., relational table). Knowing that the tree contains 9 nodes (including leaves), the system has as much parallelism capacity as needed to run all the joins in pipelining mode (no other kind of parallelism is available), which is the occupancy if the overall cost of the serial query is 4 seconds? Explicit any assumption you need to make.
+7. Consider a left-deep process tree corresponding to a query, where each internal node is a join, and every leaf a data source (e.g., relational table). Knowing that the tree contains 9 nodes (including leaves), the system has as much parallelism capacity as needed to run all the joins in pipelining mode (no other kind of parallelism is available), which is the occupancy if the overall cost of the serial query is 4 seconds? Explicit any assumption you need to make.
