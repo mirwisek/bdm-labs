@@ -63,24 +63,48 @@
 
 
 8. Given *N* replicas, let’s call *R* the *ReadConcern* parameter of MongoDB and *W* the *WriteConcern* (which indicate respectively the number of copies it reads and writes, before confirming the operation to the user); give the equation involving those variables that corresponds to the **eventually consistent** configuration.
-*W+R<=N* --> Replicas updated (W) may not be the same as the ones read (R)
-N: #replicas
-W: #replicas that have to be written before commit
-R: #replicas read that need to coincide before giving response
+
+    ***
+
+    $$
+    W+R<=N
+    $$
+    
+    Replicas updated (W) may not be the same as the ones read (R)
+
+    $N$ : #replicas
+
+    $W$ : #replicas that have to be written before commit
+
+    $R$ : #replicas read that need to coincide before giving response
 
 
 9. What is the difference between query cost and query response time ...
-   Query cost = Resources Used
-   Response time = Time taken to perform action
 
-    1. in centralized systems? Lineal Relation between query cost and response time: The more resources the less time
-    2. in distributed systems? Due to paralelism, relation is not lineal. (Refering to Universal scalability law)
+    ***
+
+   Query cost = Resources Used
+   Response time = Time taken to get results
+
+   Query cost referes to the predicted amount of resources to be consumed after running the query while response time refers to the the time taken until results are produced.
+
+    1. in centralized systems? 
+    
+    Linear Relation between query cost and response time: The more resources the less time. The response time is somewhat close to the predictions of query planner's response time.
+
+    2. in distributed systems? 
+    
+    Due to paralelism, relation is not linear (Refering to Universal scalability law)
        - You can be using more resources and affecting response time based on the increase of comunication required.
-       - You can be waiting for a response without using more resources
+       - You can be waiting for a response without using more resources.
 
 11. Name the two factors that make impossible having linear scalability according to the Universal Scalability Law.
-    1. —(a) Communication → More resources imply equal or more communication: Communication cost is not reduced by having more machines, they would remain the same or increase.
-    2. —(b) Unparalelizable Actions: Some actions are not improved with parallelism. Examples: A join of all values, read values equal to 'A', etc
+
+    ***
+
+    1. **Communication** → More resources imply equal or more communication: Communication cost is not reduced by having more machines, they would remain the same or increase.
+
+    2. **Unparalelizable Actions** → Some actions are not improved with parallelism. Examples: A join of all values, read values equal to 'A', etc
 
 ## 2.2 Problems
 
@@ -101,22 +125,47 @@ R: #replicas read that need to coincide before giving response
     
     ![Untitled](02-Distributed%20Data/Untitled.png)
     
-    Kids: Vertical fragmentation. Complete, disjoint, allows reconstruction (by joining by kidId)
-    Toys: Horizontal fragmentation. Complete (if we don’t have null/undefined values), disjoint, allows for reconstruction (by union) if it's complete
-    Requests: Derived horizontal fragmentation. Complete (depends on T1 and T2 characteristics), disjoint, allows for reconstruction (by union) if it's complete
+    ***
+    
+    **Kids**: 
+    - Vertical fragmentation
+    - Complete
+    - Disjoint
+    - Allows reconstruction (by joining by kidId)
+    
+    **Toys**: 
+    - Horizontal fragmentation
+    - Complete (Since primary key can't be null by default so we assume no NULLS)
+    - Disjoint
+    - Allows for reconstruction (by union)
+
+    **Requests**: 
+    - Derived horizontal fragmentation
+    - Complete (depends on T1 and T2 characteristics)
+    - Disjoint
+    - Allows for reconstruction (by union) if it's complete
+
     
 2.  You are a customer using an e-commerce based on heavy replication (e.g., Amazon):
+
+    ***
+
     1. Show a database replication strategy (e.g., sketch it) where:
         1. You buy an item, but this item does not appear in your basket.
         2. You reload the page: the item appears.
         
-        ⇒ What happened? *Lazy primary copy replication* --> We write in a server but get a response from another one that is not yet updated
-
+        ⇒ What happened? 
+        
+        **Lazy primary copy replication**
+        We are only allowed to write primary server, while we are reading from a replica and the replica is not yet synchronized with new item added to the basket. As we reload the replica has been synced with master node (Eventual Consistency reached).
         
     2. Show a database replication strategy (e.g., sketch it) where:
         1. You delete an item from your command, and add another one: the basket shows both items.
         
-        ⇒ What happened? Will the situation change if you reload the page? *Lazy distributed replication* → Client access one server and deletes, but adds the new item to another server that is not updated with the previous deletion. In a primary replication, the master would have a queue of actions to perform, therefore, it would not add item B without having deleted item A. However, since in distributed replications, there is no master and operations can be requested from any node in any order, we could have this scenario. If we reload the page it should eventually be updated.
+        ⇒ What happened? Will the situation change if you reload the page? 
+        
+        **Lazy distributed replication**
+        Client reads and deletes using a replica, but adds the new item through another replica that is not updated with the previous deletion. In a primary replication, the master would have a queue of actions to perform, therefore, it would not add item B without having deleted item A. However, since in distributed replications, there is no master and operations can be requested from any node in any order, we could have this scenario. If we reload the page it should eventually be consistent.
 
         
 3. Consider the following architectures and answer the questions:
@@ -128,15 +177,27 @@ R: #replicas read that need to coincide before giving response
     | Type | Latency | Bandwidth |
     | --- | --- | --- |
     | Disk | ≈ 5 × 10^−3s (5 millisec.) | At best 100 MB/s |
-    1. How long would it take (i.e., response time) to read 1TB with sequential access (Figure 1)? (in secs)
-    *Process:*
-    Response time =  TransferTime (TTR) + Latency
-    TransferTime (TTR) = #bytes/Bandwidth = 1,000,000B/100MB = 10,000MB
 
-    *Answer*= 10,000 + 5 × 10−3s
+    ***
+
+    1. How long would it take (i.e., response time) to read 1TB with sequential access (Figure 1)? (in secs)
+    **Process:**
+
+    $$
+    1 TB \approx (1000 \times 1000) MB\\
+    ResponseTime =  T_{transfer} + T_{latency}\\
+    \\
+    T_{transfer} = \frac{\#bytes}{Bandwidth} = \frac{1000,000 MB}{100MB} = 10^{4} seconds \\
+    \\
+    Response Time = 10,000 + 5 \times 10^{-3} seconds
+
+    $$
    
     2. How long would a single random access (i.e., reading one tuple, of for example 100 bytes, through an index) take (i.e., response time), assuming we already have the physical address? (in secs)
-     *Answer*=Just the latency because you access just once ≈ 5 × 10−3s (5 millisecond.)
+
+    ***
+
+    **Answer**: Just the latency because you access just once i.e. $\approx 5 × 10−3s (5\space ms)$
         
         ![Figure 2: Shared-memory architecture](02-Distributed%20Data/image3.png)
         
@@ -145,34 +206,75 @@ R: #replicas read that need to coincide before giving response
         | Type | Latency | Bandwidth |
         | --- | --- | --- |
         | Disk | ≈ 5 × 10^−3s (5 millisec.) | At best 100 MB/s |
+
     3. How long would it take (i.e., response time) to read 1TB with parallel access (Figure 2)? Assume 100 disks (i.e., 100 replicas of the whole data) on the same machine with shared-memory and infinite CPU capacity.
+
+    ***
+
+    $$
+    1 TB \approx (1000 \times 1000) MB\\
+    ResponseTime =  T_{transfer} + T_{latency}\\
+    \\
+    T_{transfer} = \frac{\#bytes}{Disks \times Bandwidth} \\
+    T_{transfer} = \frac{1,000,000 MB}{100 \times 100MB} \\
+    T_{transfer} = 100 seconds \\
+    \\
+    Response Time = 100 + 5 \times 10^{-3} seconds
+
+    $$
+
     4. How long would a single random access (i.e., reading one tuple, of 100 bytes, through an index) take (i.e., response time), assuming we already have the physical address? (in secs)
+
+    ***
+
+    **Answer**: Just the latency because you access just once and since we know the exact machine i.e. $\approx 5 × 10−3s (5\space ms)$
         
-        ![Figure 3: Shared-nothing architecture](02-Distributed%20Data/image4.png)
-        
-        Figure 3: Shared-nothing architecture
-        
-        | Type | Latency | Bandwidth |
-        | --- | --- | --- |
-        | Disk
-        LAN
-        Internet | ≈ 5 × 10^−3s (5 millisec.)
-        ≈ 1 − 2 × 10^−3s (1-2 millisec.)
-        Highly variable
-        (typically 10-100ms) | At best 100 MB/s
-        ≈ 1 GB/s (single rack) ≈ 10MB/s (switched)
-        Highly variable
-        (typically a few MB/s, e.g., 10MB/s) |
-        
-        > Note 1: It is approx. one order of magnitude faster to exchange main memory data between 2 machines in a data center, that to read on the disk.
-        > 
-        > 
-        > *Note 2:* Exchanging through the Internet is slow and unreliable with respect to LANs.
-        > 
+    ![Figure 3: Shared-nothing architecture](02-Distributed%20Data/image4.png)
+    
+    Figure 3: Shared-nothing architecture
+    
+    | Type | Latency | Bandwidth |
+    | --- | --- | --- |
+    | Disk
+    LAN
+    Internet | ≈ 5 × 10^−3s (5 millisec.)
+    ≈ 1 − 2 × 10^−3s (1-2 millisec.)
+    Highly variable
+    (typically 10-100ms) | At best 100 MB/s
+    ≈ 1 GB/s (single rack) ≈ 10MB/s (switched)
+    Highly variable
+    (typically a few MB/s, e.g., 10MB/s) |
+    
+    > Note 1: It is approx. one order of magnitude faster to exchange main memory data between 2 machines in a data center, that to read on the disk.
+    > 
+    > 
+    > *Note 2:* Exchanging through the Internet is slow and unreliable with respect to LANs.
+    > 
+
     5. How long would it take (i.e., response time) to read 1TB with distributed access (Figure 3)? Assume 100 shared-nothing machines (with all data replicated in each of them) in a star-shape LAN in a single rack where all data is sent to the center of the star in only one network hop.
-    6. How long would it take (i.e., response time) to read 1TB with distributed access (Figure 3)? Assume 100 shared-nothing machines (with all data replicated in each of them) in a star-shape cluster of ma- chines connected through the Internet where all data is sent to the center of the star in only one network hop.
+
+
+    ***
+
+    $$
+    T_{transfer} = 5 \times 10^{-3} \space \text{(Since disk is the bottleneck)} \\
+    \\
+    Response Time = T_{transfer} + T_{disk\_latency} + T_{LAN\_latency} = 100 + 5 \times 10^{-3} + 2 \times 10^{-3} s \\
+
+    \text{The last two terms can be ignore as they're not significant}
+
+    $$
+
+    6. How long would it take (i.e., response time) to read 1TB with distributed access (Figure 3)? Assume 100 shared-nothing machines (with all data replicated in each of them) in a star-shape cluster of machines connected through the Internet where all data is sent to the center of the star in only one network hop.
+
+    ***
+
+
     7. How long would a single random access (i.e., reading one tuple, of 100 bytes, through an index) take (i.e., response time), assuming we already have the physical address? (in secs)
-5. What are the main differences between these two distributed access plans? Under which assumptions is one or the other better?
+
+    ***
+
+4. What are the main differences between these two distributed access plans? Under which assumptions is one or the other better?
     
     ```sql
     SELECT * FROM employee e, assignedTo a
@@ -195,7 +297,7 @@ R: #replicas read that need to coincide before giving response
     
     Figure 4: Distributed Access Plans
     
-6. Compute the fragment query (data location stage) for the database setting and query below and find in how many ways we can assign the operations to the different sites.
+5. Compute the fragment query (data location stage) for the database setting and query below and find in how many ways we can assign the operations to the different sites.
     
     ⇒ Database setting:
     
@@ -212,4 +314,4 @@ R: #replicas read that need to coincide before giving response
     
     ![02-Distributed%20Data/image7.jpeg](02-Distributed%20Data/image7.jpeg)
     
-7. Consider a left-deep process tree corresponding to a query, where each internal node is a join, and every leaf a data source (e.g., relational table). Knowing that the tree contains 9 nodes (including leaves), the system has as much parallelism capacity as needed to run all the joins in pipelining mode (no other kind of parallelism is available), which is the occupancy if the overall cost of the serial query is 4 seconds? Explicit any assumption you need to make.
+6. Consider a left-deep process tree corresponding to a query, where each internal node is a join, and every leaf a data source (e.g., relational table). Knowing that the tree contains 9 nodes (including leaves), the system has as much parallelism capacity as needed to run all the joins in pipelining mode (no other kind of parallelism is available), which is the occupancy if the overall cost of the serial query is 4 seconds? Explicit any assumption you need to make.
